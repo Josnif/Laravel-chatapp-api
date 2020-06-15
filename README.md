@@ -7,21 +7,37 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 - # Get All Messages
 ```php
-public function getAllMessage(Request $request)
+public function getAllConversation(Request $request)
     {
-        $user = User::where('id', $request->id)->first();
-        $message = Message::where('user_id', $user->id)
-                            ->orWhere('receiver_id', $user->id)->get();
+        $id=$request->id;
 
-        if($message) {
-            return response()->json($message, 200);
-        }
+        $conversations[] = Message::with('receiver')->where('user_id', $id)->get();
+        $conversations[] = Message::with('sender')->where('receiver_id', $id)->get();
+
+        $allConversations = json_decode(json_encode($conversations), true);
+
+        return response()->json($allConversations, 200);
 
     }
 
-// Route for all messages
-Route::get('allMessage/{id}', 'MessageController@getAllMessage');
-// This should be called for displaying all the messages of the user on the home page for  sender($user_id) and reciever if $user->id == receiver_id
 ```
 - # Get Private Messages
+```php
+public function privateMessage(Request $request)
+    {
+        $userId = $request->user;
+        $friend = $request->friend;
 
+
+
+        // Get messages for private chat
+            $messages = Message::where(['user_id' => $userId, 'receiver_id' => $friend])
+                                ->orWhere(function($query) use($userId, $friend) {
+                                    $query->where(['user_id' => $friend, 'receiver_id' => $userId]);
+            })->get();
+
+        return response()->json($messages, 200);
+
+    }
+
+```
